@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Subraya</title>
+    <style>
+      body {
+        margin: 0;
+        width: 220px;
+        font: 13px/1.4 system-ui, sans-serif;
+        color: #1a1a1a;
+      }
+      main {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      h1 {
+        font-size: 14px;
+        margin: 0 0 4px;
+      }
+      button {
+        font: inherit;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background: #f7f7f7;
+        cursor: pointer;
+        text-align: left;
+      }
+      button:hover {
+        background: #eee;
+      }
+      #status {
+        min-height: 16px;
+        font-size: 12px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Subraya</h1>
+      <button id="activate">Activate on this page</button>
+      <button id="open-library">Open library</button>
+      <div id="status"></div>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

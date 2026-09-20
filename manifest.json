@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Subraya",
+  "version": "0.1.0",
+  "description": "Save and organize local highlights from web pages.",
+  "permissions": ["activeTab", "scripting", "contextMenus"],
+  "background": {
+    "service_worker": "background/index.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html"
+  }
+}
