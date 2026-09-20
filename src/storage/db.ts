@@ -53,6 +53,11 @@ export async function listHighlights(): Promise<Highlight[]> {
   }
 }
 
+export async function listHighlightsForUrl(url: string): Promise<Highlight[]> {
+  const all = await listHighlights();
+  return all.filter((highlight) => highlight.url === url);
+}
+
 export async function deleteHighlight(id: string): Promise<void> {
   const db = await openDb();
   try {

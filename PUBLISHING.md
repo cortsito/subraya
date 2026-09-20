@@ -12,11 +12,20 @@ The first prototype should prefer:
 
 Add `downloads` only when export ships. Do not request permissions for future features.
 
-Do not add `<all_urls>` at the start. It becomes necessary when the extension loads or restores highlights automatically on every visited page, or shows a selection control without prior activation. The Chrome Web Store permission justification will be:
+### HTTP(S) automatic restoration (Milestone 3)
+
+As of web persistence (Milestone 3), Subraya declares `host_permissions` and a static
+content script for exactly `http://*/*` and `https://*/*` — not `<all_urls>`. This is
+what lets a saved highlight redraw automatically when the user reloads or revisits the
+same page, without reopening the popup. It does not grant `file://` access or reach
+Chrome's internal pages, and it is unrelated to incognito mode: local-file and incognito
+access remain separate, explicit browser opt-ins that Subraya does not request or assume.
+
+The Chrome Web Store permission justification is:
 
 > Subraya needs access to the pages you visit so it can display and restore the highlights you saved on those pages. Content is processed and stored only in your browser; it is never sent to our servers or used for advertising.
 
-Use this explanation only if the manifest and product behavior exactly match it. Local-file and incognito access require the user's explicit browser opt-in and must never be marketed as automatic access.
+Use this explanation only if the manifest and product behavior exactly match it.
 
 ## Before submitting
 

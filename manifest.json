@@ -4,10 +4,18 @@
   "version": "0.1.0",
   "description": "Save and organize local highlights from web pages.",
   "permissions": ["activeTab", "scripting", "contextMenus"],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "background/index.js"
   },
   "action": {
     "default_popup": "popup/popup.html"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content/index.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }

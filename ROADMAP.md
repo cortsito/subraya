@@ -8,7 +8,7 @@ A Chrome extension that saves text the user highlights on web pages, displays it
 
 1. **Foundation** ✅ — Manifest V3, TypeScript, a minimal popup, and a way to open the library. Development, build, lint, and test commands are defined (see `CLAUDE.md`).
 2. **Highlight one page** ✅ — From an explicit user action, capture a selection, render it with the CSS Custom Highlight API, and save it in IndexedDB with text, URL, title, date, and an anchor. Highlights persist only for the current page session; reload re-anchoring is milestone 3.
-3. **Web persistence** — Find and redraw highlights when the user returns to a page. At this point, decide whether the product needs permanent all-site access.
+3. **Web persistence** ✅ — On matching HTTP(S) page loads, silently ask for and redraw saved highlights using a position-first, prefix/suffix-fallback resolver; ambiguous matches are skipped rather than painted at random. This required permanent `http://*/*` and `https://*/*` host access (not `<all_urls>`, no file/incognito access) — see `PUBLISHING.md`. Interactive selection is unaffected: it still only turns on via "Activate on this page" or the context menu.
 4. **Library and export** — List highlights, provide simple search and deletion, and export a Markdown file grouped by source.
 5. **PDFs** — Use a custom pdf.js viewer or Chrome's modern MIME handler API, after validating real-world compatibility. Save the PDF page and anchor. Do not block web milestones on this work.
 6. **Polish and release** — Add colors, notes, and tags only if they remain necessary; test in Chrome and Edge; complete the `PUBLISHING.md` checklist.

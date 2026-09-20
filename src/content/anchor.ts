@@ -1,6 +1,6 @@
 import type { Anchor } from "../shared/types";
 
-const CONTEXT_CHARS = 40;
+export const CONTEXT_CHARS = 40;
 
 export function isEditableTarget(node: Node): boolean {
   const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
