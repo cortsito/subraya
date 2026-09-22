@@ -11,7 +11,7 @@ function webHighlight(): Highlight {
     title: "Article",
     domain: "example.com",
     dateCreated: "2026-09-20T10:30:00.000Z",
-    color: "#ffe066",
+    color: "yellow",
     anchor: { exact: "text", prefix: "", suffix: "", position: { start: 0, end: 4 } },
   };
 }
@@ -25,7 +25,7 @@ function pdfHighlight(pdfPage: number): Highlight {
     title: "Paper",
     domain: "example.com",
     dateCreated: "2026-09-20T10:30:00.000Z",
-    color: "#ffe066",
+    color: "yellow",
     anchor: { exact: "text", prefix: "", suffix: "", position: { start: 0, end: 4 } },
     pdfPage,
   };

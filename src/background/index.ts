@@ -1,8 +1,10 @@
-import { addHighlight, listHighlightsForUrl } from "../storage/db";
+import { addHighlight, createIdea, listHighlightsForUrl, listIdeas } from "../storage/db";
 import type {
   BackgroundMessage,
   ContentMessage,
+  CreateIdeaResponse,
   ListHighlightsForUrlResponse,
+  ListIdeasResponse,
   SaveHighlightResponse,
 } from "../shared/messages";
 
@@ -63,6 +65,38 @@ chrome.runtime.onMessage.addListener((message: BackgroundMessage, _sender, sendR
       })
       .catch((err: unknown) => {
         const response: ListHighlightsForUrlResponse = {
+          ok: false,
+          error: err instanceof Error ? err.message : String(err),
+        };
+        sendResponse(response);
+      });
+    return true;
+  }
+
+  if (message.type === "LIST_IDEAS") {
+    listIdeas()
+      .then((ideas) => {
+        const response: ListIdeasResponse = { ok: true, ideas };
+        sendResponse(response);
+      })
+      .catch((err: unknown) => {
+        const response: ListIdeasResponse = {
+          ok: false,
+          error: err instanceof Error ? err.message : String(err),
+        };
+        sendResponse(response);
+      });
+    return true;
+  }
+
+  if (message.type === "CREATE_IDEA") {
+    createIdea(message.name)
+      .then((idea) => {
+        const response: CreateIdeaResponse = { ok: true, idea };
+        sendResponse(response);
+      })
+      .catch((err: unknown) => {
+        const response: CreateIdeaResponse = {
           ok: false,
           error: err instanceof Error ? err.message : String(err),
         };

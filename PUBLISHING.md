@@ -44,7 +44,7 @@ Subraya declares `mime_types_handler` for `application/pdf` (requires `minimum_c
 
 The final policy should clearly state:
 
-1. **What is processed:** selected text, URL, title, date, color, and—for PDF highlights—the page number; notes and tags only if shipped later.
+1. **What is processed:** selected text, URL, title, date, color, the optional Idea name a highlight is connected to, and—for PDF highlights—the page number; notes and tags only if shipped later.
 2. **Why:** to create, restore, display, and export highlights the user chooses to save.
 3. **Where it stays:** IndexedDB or browser-local extension storage.
 4. **What does not happen:** no account, first-party server, analytics, data sale, personalized advertising, or third-party data transfer.

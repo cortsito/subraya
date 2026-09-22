@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { isValidNewHighlightInput, type NewHighlightInput, type PdfHighlight, type WebHighlight } from "./types";
+import {
+  DEFAULT_PALETTE_COLOR,
+  isValidNewHighlightInput,
+  normalizePaletteColor,
+  PALETTE_COLORS,
+  type NewHighlightInput,
+  type PdfHighlight,
+  type WebHighlight,
+} from "./types";
 
 type NewWebHighlightInput = Omit<WebHighlight, "id" | "dateCreated">;
 type NewPdfHighlightInput = Omit<PdfHighlight, "id" | "dateCreated">;
@@ -11,7 +19,7 @@ function webInput(overrides: Partial<NewWebHighlightInput> = {}): NewHighlightIn
     url: "https://example.com/article",
     title: "Example Article",
     domain: "example.com",
-    color: "#ffe066",
+    color: "yellow",
     anchor: { exact: "Some highlighted text", prefix: "", suffix: "", position: { start: 0, end: 5 } },
     ...overrides,
   };
@@ -24,7 +32,7 @@ function pdfInput(overrides: Partial<NewPdfHighlightInput> = {}): NewHighlightIn
     url: "https://example.com/paper.pdf",
     title: "A Paper",
     domain: "example.com",
-    color: "#ffe066",
+    color: "yellow",
     anchor: { exact: "Some highlighted text", prefix: "", suffix: "", position: { start: 0, end: 5 } },
     pdfPage: 1,
     ...overrides,
@@ -60,5 +68,32 @@ describe("isValidNewHighlightInput", () => {
     const withoutPage = pdfInput() as Partial<NewPdfHighlightInput>;
     delete withoutPage.pdfPage;
     expect(isValidNewHighlightInput(withoutPage as NewHighlightInput)).toBe(false);
+  });
+
+  it("rejects a color outside the fixed palette", () => {
+    expect(isValidNewHighlightInput(webInput({ color: "#ffe066" as never }))).toBe(false);
+    expect(isValidNewHighlightInput(webInput({ color: "purple" as never }))).toBe(false);
+  });
+});
+
+describe("normalizePaletteColor", () => {
+  it("passes through every color in the fixed palette", () => {
+    for (const color of PALETTE_COLORS) {
+      expect(normalizePaletteColor(color)).toBe(color);
+    }
+  });
+
+  it("defaults a legacy hex value to Yellow", () => {
+    expect(normalizePaletteColor("#ffe066")).toBe(DEFAULT_PALETTE_COLOR);
+  });
+
+  it("defaults a missing value to Yellow", () => {
+    expect(normalizePaletteColor(undefined)).toBe(DEFAULT_PALETTE_COLOR);
+    expect(normalizePaletteColor(null)).toBe(DEFAULT_PALETTE_COLOR);
+  });
+
+  it("defaults an arbitrary/unexpected string to Yellow rather than trusting it", () => {
+    expect(normalizePaletteColor("purple")).toBe(DEFAULT_PALETTE_COLOR);
+    expect(normalizePaletteColor("subraya-highlight-injected")).toBe(DEFAULT_PALETTE_COLOR);
   });
 });

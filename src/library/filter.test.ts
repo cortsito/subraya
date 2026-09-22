@@ -11,7 +11,7 @@ function makeHighlight(overrides: Partial<WebHighlight> = {}): WebHighlight {
     title: "Example Article",
     domain: "example.com",
     dateCreated: "2026-09-20T10:30:00.000Z",
-    color: "#ffe066",
+    color: "yellow",
     anchor: { exact: "Some highlighted text", prefix: "", suffix: "", position: { start: 0, end: 5 } },
     ...overrides,
   };

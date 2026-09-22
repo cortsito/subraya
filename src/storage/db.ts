@@ -1,8 +1,16 @@
-import { isValidNewHighlightInput, type Highlight, type NewHighlightInput } from "../shared/types";
+import { assignIdea, normalizeIdeaName, sortIdeasByRecency, unassignHighlightsForIdea } from "../shared/ideas";
+import {
+  isValidNewHighlightInput,
+  normalizePaletteColor,
+  type Highlight,
+  type Idea,
+  type NewHighlightInput,
+} from "../shared/types";
 
 const DB_NAME = "subraya";
-const DB_VERSION = 1;
-const STORE_NAME = "highlights";
+const DB_VERSION = 2;
+const HIGHLIGHTS_STORE = "highlights";
+const IDEAS_STORE = "ideas";
 
 function promisifyRequest<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -16,8 +24,11 @@ function openDb(): Promise<IDBDatabase> {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: "id" });
+      if (!db.objectStoreNames.contains(HIGHLIGHTS_STORE)) {
+        db.createObjectStore(HIGHLIGHTS_STORE, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(IDEAS_STORE)) {
+        db.createObjectStore(IDEAS_STORE, { keyPath: "id" });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -32,14 +43,15 @@ export async function addHighlight(input: NewHighlightInput): Promise<Highlight>
 
   const highlight: Highlight = {
     ...input,
+    color: normalizePaletteColor(input.color),
     id: crypto.randomUUID(),
     dateCreated: new Date().toISOString(),
   };
 
   const db = await openDb();
   try {
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    await promisifyRequest(tx.objectStore(STORE_NAME).put(highlight));
+    const tx = db.transaction(HIGHLIGHTS_STORE, "readwrite");
+    await promisifyRequest(tx.objectStore(HIGHLIGHTS_STORE).put(highlight));
     return highlight;
   } finally {
     db.close();
@@ -49,9 +61,11 @@ export async function addHighlight(input: NewHighlightInput): Promise<Highlight>
 export async function listHighlights(): Promise<Highlight[]> {
   const db = await openDb();
   try {
-    const tx = db.transaction(STORE_NAME, "readonly");
-    const all = await promisifyRequest(tx.objectStore(STORE_NAME).getAll());
-    return (all as Highlight[]).sort((a, b) => b.dateCreated.localeCompare(a.dateCreated));
+    const tx = db.transaction(HIGHLIGHTS_STORE, "readonly");
+    const all = (await promisifyRequest(tx.objectStore(HIGHLIGHTS_STORE).getAll())) as Highlight[];
+    return all
+      .map((highlight) => ({ ...highlight, color: normalizePaletteColor(highlight.color) }))
+      .sort((a, b) => b.dateCreated.localeCompare(a.dateCreated));
   } finally {
     db.close();
   }
@@ -65,8 +79,74 @@ export async function listHighlightsForUrl(url: string): Promise<Highlight[]> {
 export async function deleteHighlight(id: string): Promise<void> {
   const db = await openDb();
   try {
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    await promisifyRequest(tx.objectStore(STORE_NAME).delete(id));
+    const tx = db.transaction(HIGHLIGHTS_STORE, "readwrite");
+    await promisifyRequest(tx.objectStore(HIGHLIGHTS_STORE).delete(id));
+  } finally {
+    db.close();
+  }
+}
+
+export async function listIdeas(): Promise<Idea[]> {
+  const db = await openDb();
+  try {
+    const tx = db.transaction(IDEAS_STORE, "readonly");
+    const all = (await promisifyRequest(tx.objectStore(IDEAS_STORE).getAll())) as Idea[];
+    return sortIdeasByRecency(all);
+  } finally {
+    db.close();
+  }
+}
+
+export async function createIdea(name: string): Promise<Idea> {
+  const normalized = normalizeIdeaName(name);
+  if (!normalized) {
+    throw new Error("Invalid idea name");
+  }
+
+  const idea: Idea = {
+    id: crypto.randomUUID(),
+    name: normalized,
+    createdAt: new Date().toISOString(),
+  };
+
+  const db = await openDb();
+  try {
+    const tx = db.transaction(IDEAS_STORE, "readwrite");
+    await promisifyRequest(tx.objectStore(IDEAS_STORE).put(idea));
+    return idea;
+  } finally {
+    db.close();
+  }
+}
+
+/** Connects or disconnects a saved highlight to an Idea. `ideaId: null` removes any existing connection. */
+export async function assignHighlightIdea(highlightId: string, ideaId: string | null): Promise<void> {
+  const db = await openDb();
+  try {
+    const tx = db.transaction(HIGHLIGHTS_STORE, "readwrite");
+    const store = tx.objectStore(HIGHLIGHTS_STORE);
+    const existing = (await promisifyRequest(store.get(highlightId))) as Highlight | undefined;
+    if (!existing) return;
+    await promisifyRequest(store.put(assignIdea(existing, ideaId)));
+  } finally {
+    db.close();
+  }
+}
+
+/** Deletes an Idea and unassigns any highlights connected to it. The highlights themselves are never deleted. */
+export async function deleteIdea(id: string): Promise<void> {
+  const db = await openDb();
+  try {
+    const tx = db.transaction([HIGHLIGHTS_STORE, IDEAS_STORE], "readwrite");
+    const highlightsStore = tx.objectStore(HIGHLIGHTS_STORE);
+    const all = (await promisifyRequest(highlightsStore.getAll())) as Highlight[];
+    const unassigned = unassignHighlightsForIdea(all, id);
+    for (let i = 0; i < all.length; i++) {
+      if (unassigned[i] !== all[i]) {
+        await promisifyRequest(highlightsStore.put(unassigned[i]));
+      }
+    }
+    await promisifyRequest(tx.objectStore(IDEAS_STORE).delete(id));
   } finally {
     db.close();
   }

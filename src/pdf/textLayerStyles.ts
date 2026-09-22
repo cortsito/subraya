@@ -1,9 +1,21 @@
-import { HIGHLIGHT_CSS_NAME } from "../content/highlightPainter";
-import { DEFAULT_HIGHLIGHT_COLOR } from "../shared/types";
+import { PALETTE_HIGHLIGHT_NAMES } from "../content/highlightPainter";
+import { PALETTE_COLORS, PALETTE_HEX } from "../shared/types";
 
 export const PAGE_CLASS = "subraya-pdf-page";
 export const TEXT_LAYER_CLASS = "subraya-text-layer";
 const STYLE_ID = "subraya-pdf-text-layer-styles";
+
+/**
+ * Translucent version of every fixed palette `::highlight()` rule, so PDF
+ * canvas text stays visible underneath. Built only from the fixed
+ * PALETTE_COLORS/PALETTE_HIGHLIGHT_NAMES allowlists — never from stored data.
+ */
+function translucentPaletteHighlightRules(): string {
+  return PALETTE_COLORS.map(
+    (color) =>
+      `::highlight(${PALETTE_HIGHLIGHT_NAMES[color]}) { background-color: color-mix(in srgb, ${PALETTE_HEX[color]} 45%, transparent); }`,
+  ).join("\n    ");
+}
 
 // Hand-written subset of pdf.js's own text-layer stylesheet (web/pdf_viewer.css):
 // just enough for TextLayer's inline per-span transforms/font-size calc()
@@ -63,16 +75,15 @@ export function injectTextLayerStyles(): void {
     }
 
     /*
-     * The generic ::highlight() rule (content/ui.ts's injectStyles(), applied
-     * before this stylesheet) paints web-page highlights with a fully opaque
-     * background. Over a PDF, the canvas — not the (transparent) text layer —
-     * is the visible glyph source, so an opaque highlight would hide it
-     * entirely. This later, equal-specificity rule overrides it for PDF pages
-     * only, without touching web-page highlight styling.
+     * The generic ::highlight() rules (content/ui.ts's injectStyles(),
+     * applied before this stylesheet) paint web-page highlights with a fully
+     * opaque background, one per palette color. Over a PDF, the canvas — not
+     * the (transparent) text layer — is the visible glyph source, so an
+     * opaque highlight would hide it entirely. These later, equal-specificity
+     * rules override them for PDF pages only, without touching web-page
+     * highlight styling.
      */
-    ::highlight(${HIGHLIGHT_CSS_NAME}) {
-      background-color: color-mix(in srgb, ${DEFAULT_HIGHLIGHT_COLOR} 45%, transparent);
-    }
+    ${translucentPaletteHighlightRules()}
   `;
   document.head.appendChild(style);
 }

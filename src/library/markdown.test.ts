@@ -11,7 +11,7 @@ function makeHighlight(overrides: Partial<WebHighlight> = {}): WebHighlight {
     title: "Page title",
     domain: "example.com",
     dateCreated: "2026-09-20T10:30:00.000Z",
-    color: "#ffe066",
+    color: "yellow",
     anchor: { exact: "", prefix: "", suffix: "", position: { start: 0, end: 0 } },
     ...overrides,
   };
@@ -26,7 +26,7 @@ function makePdfHighlight(overrides: Partial<PdfHighlight> = {}): PdfHighlight {
     title: "A Research Paper",
     domain: "example.com",
     dateCreated: "2026-09-20T10:30:00.000Z",
-    color: "#ffe066",
+    color: "yellow",
     anchor: { exact: "", prefix: "", suffix: "", position: { start: 0, end: 0 } },
     pdfPage: 3,
     ...overrides,

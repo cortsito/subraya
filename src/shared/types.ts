@@ -8,6 +8,42 @@ export interface Anchor {
   };
 }
 
+/** A fixed, allowlisted set of highlight colors. Never trust a raw stored string as one of these — go through `normalizePaletteColor`. */
+export type PaletteColor = "yellow" | "coral" | "mint" | "sky" | "lilac";
+
+export const PALETTE_COLORS: readonly PaletteColor[] = ["yellow", "coral", "mint", "sky", "lilac"];
+
+export const PALETTE_HEX: Record<PaletteColor, string> = {
+  yellow: "#ffe066",
+  coral: "#ff8a75",
+  mint: "#7be0b6",
+  sky: "#7fc7ff",
+  lilac: "#c6a6f7",
+};
+
+export const PALETTE_LABELS: Record<PaletteColor, string> = {
+  yellow: "Yellow",
+  coral: "Coral",
+  mint: "Mint",
+  sky: "Sky",
+  lilac: "Lilac",
+};
+
+export const DEFAULT_PALETTE_COLOR: PaletteColor = "yellow";
+
+/** Maps any stored or incoming value to a known-safe palette color, defaulting legacy/unknown values to Yellow. */
+export function normalizePaletteColor(value: unknown): PaletteColor {
+  return typeof value === "string" && (PALETTE_COLORS as readonly string[]).includes(value)
+    ? (value as PaletteColor)
+    : DEFAULT_PALETTE_COLOR;
+}
+
+export interface Idea {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 interface HighlightBase {
   id: string;
   text: string;
@@ -15,7 +51,9 @@ interface HighlightBase {
   title: string;
   domain: string;
   dateCreated: string;
-  color: string;
+  color: PaletteColor;
+  /** Zero or one Idea a highlight is connected to. Absent means unconnected. */
+  ideaId?: string;
   anchor: Anchor;
 }
 
@@ -38,10 +76,9 @@ type DistributiveOmit<T, K extends keyof never> = T extends unknown ? Omit<T, K>
 
 export type NewHighlightInput = DistributiveOmit<Highlight, "id" | "dateCreated">;
 
-export const DEFAULT_HIGHLIGHT_COLOR = "#ffe066";
-
 export function isValidNewHighlightInput(input: NewHighlightInput): boolean {
   if (input.text.length === 0) return false;
+  if (!(PALETTE_COLORS as readonly string[]).includes(input.color)) return false;
   if (input.sourceType === "pdf") {
     return Number.isInteger(input.pdfPage) && input.pdfPage >= 1;
   }

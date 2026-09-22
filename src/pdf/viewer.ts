@@ -1,11 +1,12 @@
 import * as pdfjsLib from "pdfjs-dist";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import { DEFAULT_HIGHLIGHT_COLOR, type NewHighlightInput, type PdfHighlight } from "../shared/types";
-import { addHighlight, listHighlightsForUrl } from "../storage/db";
+import type { Idea, NewHighlightInput, PaletteColor, PdfHighlight } from "../shared/types";
+import { addHighlight, createIdea, listHighlightsForUrl, listIdeas } from "../storage/db";
 import { computeAnchor, isEditableTarget } from "../content/anchor";
 import { resolveAnchor } from "../content/resolver";
 import { clearAll, paint } from "../content/highlightPainter";
-import { hideHighlightButton, injectStyles, isHighlightButtonTarget, showHighlightButton } from "../content/ui";
+import { hideSelectionPopover, isPopoverTarget, RECENT_IDEAS_LIMIT, showSelectionPopover } from "../content/popover";
+import { injectStyles } from "../content/ui";
 import { injectTextLayerStyles, PAGE_CLASS, TEXT_LAYER_CLASS } from "./textLayerStyles";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL("pdf/pdf.worker.mjs");
@@ -39,7 +40,9 @@ let originalUrl = "";
 let docTitle = "";
 let zoomIndex = DEFAULT_ZOOM_INDEX;
 let pdfHighlights: PdfHighlight[] = [];
-let pendingSelection: PendingSelection | null = null;
+// Bumped whenever the current selection is invalidated, so an idea fetch that
+// resolves after the user has already moved on doesn't pop open a stale popover.
+let selectionGeneration = 0;
 const pages: PageEntry[] = [];
 
 function currentScale(): number {
@@ -204,8 +207,8 @@ async function changeZoom(direction: 1 | -1): Promise<void> {
   // Range objects already registered as CSS highlights. Clear first, then
   // restoreHighlightsForPage() (called from renderPage) repaints them against
   // the freshly built text layers.
-  hideHighlightButton();
-  pendingSelection = null;
+  selectionGeneration++;
+  hideSelectionPopover();
   clearAll();
 
   for (const entry of pages) {
@@ -229,47 +232,87 @@ function wireHighlightInteraction(): void {
   document.addEventListener("keyup", handleSelectionChange);
 }
 
+async function fetchRecentIdeas(): Promise<Idea[]> {
+  try {
+    return (await listIdeas()).slice(0, RECENT_IDEAS_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
+// The Idea most recently created from this popover, kept selected as the
+// default for subsequent highlights in this session.
+let lastCreatedIdea: Idea | null = null;
+
+async function requestCreateIdea(name: string): Promise<Idea | null> {
+  try {
+    const idea = await createIdea(name);
+    lastCreatedIdea = idea;
+    return idea;
+  } catch {
+    return null;
+  }
+}
+
+function withStickyIdea(ideas: Idea[]): Idea[] {
+  if (!lastCreatedIdea) return ideas;
+  if (ideas.some((idea) => idea.id === lastCreatedIdea!.id)) return ideas;
+  return [lastCreatedIdea, ...ideas];
+}
+
+function openPopoverForSelection(pending: PendingSelection, rect: DOMRect): void {
+  const myGeneration = ++selectionGeneration;
+  void (async () => {
+    const ideas = await fetchRecentIdeas();
+    if (myGeneration !== selectionGeneration) return;
+    showSelectionPopover({
+      rect,
+      ideas: withStickyIdea(ideas),
+      selectedIdeaId: lastCreatedIdea?.id ?? null,
+      onSave: (color, ideaId) => {
+        void saveAndPaint(pending, color, ideaId);
+      },
+      onCreateIdea: requestCreateIdea,
+    });
+  })();
+}
+
 function handleSelectionChange(event: Event): void {
-  if (isHighlightButtonTarget(event.target)) return;
+  if (isPopoverTarget(event.target)) return;
 
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) {
-    pendingSelection = null;
-    hideHighlightButton();
+    selectionGeneration++;
+    hideSelectionPopover();
     return;
   }
 
-  const range = selection.getRangeAt(0);
-  if (isEditableTarget(range.commonAncestorContainer)) {
-    pendingSelection = null;
-    hideHighlightButton();
+  const liveRange = selection.getRangeAt(0);
+  if (isEditableTarget(liveRange.commonAncestorContainer)) {
+    selectionGeneration++;
+    hideSelectionPopover();
     return;
   }
 
   // A selection must belong to exactly one page's text layer: our anchors are
   // page-relative, and a Range spanning two pages has no single valid root.
-  const startPage = pageElementOf(range.startContainer);
-  const endPage = pageElementOf(range.endContainer);
+  const startPage = pageElementOf(liveRange.startContainer);
+  const endPage = pageElementOf(liveRange.endContainer);
   const root = startPage?.querySelector<HTMLElement>(`.${TEXT_LAYER_CLASS}`);
   if (!startPage || startPage !== endPage || !root) {
-    pendingSelection = null;
-    hideHighlightButton();
+    selectionGeneration++;
+    hideSelectionPopover();
     return;
   }
 
   const pageNumber = Number(startPage.dataset.page);
-  pendingSelection = { range: range.cloneRange(), pageNumber, root };
-
+  const range = liveRange.cloneRange();
   const rect = range.getBoundingClientRect();
-  showHighlightButton(rect, () => {
-    if (pendingSelection) void saveAndPaint(pendingSelection);
-  });
+  openPopoverForSelection({ range, pageNumber, root }, rect);
 }
 
-async function saveAndPaint(pending: PendingSelection): Promise<void> {
+async function saveAndPaint(pending: PendingSelection, color: PaletteColor, ideaId: string | null): Promise<void> {
   const anchor = computeAnchor(pending.range, pending.root);
-  hideHighlightButton();
-  pendingSelection = null;
 
   const input: NewHighlightInput = {
     text: anchor.exact,
@@ -277,9 +320,10 @@ async function saveAndPaint(pending: PendingSelection): Promise<void> {
     url: originalUrl,
     title: docTitle,
     domain: new URL(originalUrl).hostname,
-    color: DEFAULT_HIGHLIGHT_COLOR,
+    color,
     anchor,
     pdfPage: pending.pageNumber,
+    ...(ideaId ? { ideaId } : {}),
   };
 
   try {
@@ -287,7 +331,7 @@ async function saveAndPaint(pending: PendingSelection): Promise<void> {
     if (saved.sourceType === "pdf") {
       pdfHighlights.push(saved);
     }
-    paint(saved.id, pending.range);
+    paint(saved.id, pending.range, color);
   } catch (err) {
     console.warn("Subraya: failed to save PDF highlight", err);
   }
@@ -298,7 +342,7 @@ function restoreHighlightsForPage(pageNumber: number, root: HTMLElement): void {
     if (highlight.pdfPage !== pageNumber) continue;
     const range = resolveAnchor(highlight.anchor, root);
     if (!range) continue;
-    paint(highlight.id, range);
+    paint(highlight.id, range, highlight.color);
   }
 }
 
