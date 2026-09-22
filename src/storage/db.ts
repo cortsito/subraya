@@ -1,4 +1,4 @@
-import type { Highlight, NewHighlightInput } from "../shared/types";
+import { isValidNewHighlightInput, type Highlight, type NewHighlightInput } from "../shared/types";
 
 const DB_NAME = "subraya";
 const DB_VERSION = 1;
@@ -26,6 +26,10 @@ function openDb(): Promise<IDBDatabase> {
 }
 
 export async function addHighlight(input: NewHighlightInput): Promise<Highlight> {
+  if (!isValidNewHighlightInput(input)) {
+    throw new Error("Invalid highlight input");
+  }
+
   const highlight: Highlight = {
     ...input,
     id: crypto.randomUUID(),

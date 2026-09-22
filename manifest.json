@@ -3,8 +3,14 @@
   "name": "Subraya",
   "version": "0.1.0",
   "description": "Save and organize local highlights from web pages.",
+  "minimum_chrome_version": "151",
   "permissions": ["activeTab", "scripting", "contextMenus"],
   "host_permissions": ["http://*/*", "https://*/*"],
+  "mime_types_handler": {
+    "application/pdf": {
+      "handler_url": "pdf/viewer.html"
+    }
+  },
   "background": {
     "service_worker": "background/index.js"
   },

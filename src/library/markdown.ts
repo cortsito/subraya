@@ -67,7 +67,11 @@ export function buildMarkdownExport(highlights: Highlight[], exportedAt: Date = 
       for (const line of highlight.text.split("\n")) {
         lines.push(`> ${escapeHtml(line)}`);
       }
-      lines.push("", `Saved: ${formatSavedAt(highlight.dateCreated)}`, "");
+      lines.push("");
+      if (highlight.sourceType === "pdf") {
+        lines.push(`Page: ${highlight.pdfPage}`, "");
+      }
+      lines.push(`Saved: ${formatSavedAt(highlight.dateCreated)}`, "");
     }
   }
 

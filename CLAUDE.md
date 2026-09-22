@@ -2,7 +2,7 @@
 
 ## What we are building
 
-Subraya is a Manifest V3 browser extension for saving highlights from web pages and, later, PDFs. It is a personal reading and research tool: data stays in the user's browser, with no account, backend, analytics, or sync in the MVP.
+Subraya is a Chrome Manifest V3 extension for saving highlights from web pages and, later, PDFs. It is a personal reading and research tool: data stays in the user's browser, with no account, backend, analytics, or sync in the MVP.
 
 ## Current priority
 
@@ -27,7 +27,8 @@ The first complete flow is: the user selects text and chooses **Highlight** → 
 - An MV3 service worker cannot reliably retain in-memory state between events. Persist anything important before an event ends.
 - Start with `activeTab` + `scripting` behind an explicit user action. Do not request permanent access to every website merely for convenience.
 - If the product needs to restore highlights automatically or show a selection control on every website, it may request all-site access. Document and justify that decision before adding it.
-- Before building PDF support, validate the custom viewer approach in both Chrome and Edge. Do not attempt to inject into the browser's built-in PDF viewer.
+- Chrome is the supported browser. Edge compatibility is out of scope for now and must not add fallback code, testing, or product constraints.
+- For PDF support, use Chrome 151+ `mime_types_handler` to route PDFs to a locally bundled pdf.js viewer. Do not attempt to inject into Chrome's built-in PDF viewer.
 
 ## Working conventions
 

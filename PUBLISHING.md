@@ -27,6 +27,10 @@ The Chrome Web Store permission justification is:
 
 Use this explanation only if the manifest and product behavior exactly match it.
 
+### PDF handling (Milestone 5)
+
+Subraya declares `mime_types_handler` for `application/pdf` (requires `minimum_chrome_version: "151"`) and a locally bundled `pdf/viewer.html` handler page built on pdf.js. This is a manifest key, not an item in the `permissions` array — it adds no new entry to the Chrome Web Store's runtime-permission list, but the Web Store still surfaces "replaces Chrome's built-in PDF viewer" to users at install, and that should be covered in the store listing alongside the existing host-permission justification above. `can_embed` is intentionally omitted: v1 handles only top-level PDF tabs, not PDFs embedded in `<iframe>`/`<object>`/`<embed>` on other pages. No new dependency loads remote code: `pdfjs-dist` and its worker are bundled into `dist/` at build time (see `build.mjs`), and the worker loads via `chrome.runtime.getURL(...)`, never a CDN.
+
 ## Before submitting
 
 - Provide a narrow single-purpose description: “Save and organize local highlights from web pages and PDFs.”
@@ -40,7 +44,7 @@ Use this explanation only if the manifest and product behavior exactly match it.
 
 The final policy should clearly state:
 
-1. **What is processed:** selected text, URL, title, date, color, and—if shipped—notes, tags, and PDF page references.
+1. **What is processed:** selected text, URL, title, date, color, and—for PDF highlights—the page number; notes and tags only if shipped later.
 2. **Why:** to create, restore, display, and export highlights the user chooses to save.
 3. **Where it stays:** IndexedDB or browser-local extension storage.
 4. **What does not happen:** no account, first-party server, analytics, data sale, personalized advertising, or third-party data transfer.

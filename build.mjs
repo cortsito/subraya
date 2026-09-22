@@ -9,12 +9,17 @@ const entryPoints = {
   "content/index": "src/content/index.ts",
   "popup/popup": "src/popup/popup.ts",
   "library/library": "src/library/library.ts",
+  "pdf/viewer": "src/pdf/viewer.ts",
 };
 
 const staticFiles = [
   ["manifest.json", "manifest.json"],
   ["src/popup/popup.html", "popup/popup.html"],
   ["src/library/library.html", "library/library.html"],
+  ["src/pdf/viewer.html", "pdf/viewer.html"],
+  // pdf.js's worker is a prebuilt artifact, not part of our module graph;
+  // ship it verbatim rather than routing it through esbuild's bundler.
+  ["node_modules/pdfjs-dist/build/pdf.worker.min.mjs", "pdf/pdf.worker.mjs"],
 ];
 
 async function copyStaticFiles() {

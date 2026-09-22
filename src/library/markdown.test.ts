@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { Highlight } from "../shared/types";
+import type { PdfHighlight, WebHighlight } from "../shared/types";
 import { buildMarkdownExport, exportFilename, formatExportDate } from "./markdown";
 
-function makeHighlight(overrides: Partial<Highlight> = {}): Highlight {
+function makeHighlight(overrides: Partial<WebHighlight> = {}): WebHighlight {
   return {
     id: "id-1",
     text: "First highlighted passage",
@@ -13,6 +13,22 @@ function makeHighlight(overrides: Partial<Highlight> = {}): Highlight {
     dateCreated: "2026-09-20T10:30:00.000Z",
     color: "#ffe066",
     anchor: { exact: "", prefix: "", suffix: "", position: { start: 0, end: 0 } },
+    ...overrides,
+  };
+}
+
+function makePdfHighlight(overrides: Partial<PdfHighlight> = {}): PdfHighlight {
+  return {
+    id: "id-pdf-1",
+    text: "A highlighted PDF passage",
+    sourceType: "pdf",
+    url: "https://example.com/paper.pdf",
+    title: "A Research Paper",
+    domain: "example.com",
+    dateCreated: "2026-09-20T10:30:00.000Z",
+    color: "#ffe066",
+    anchor: { exact: "", prefix: "", suffix: "", position: { start: 0, end: 0 } },
+    pdfPage: 3,
     ...overrides,
   };
 }
@@ -121,6 +137,29 @@ describe("buildMarkdownExport", () => {
     expect(md).toContain(
       "## example.com — Real title ## Injected heading &lt;script&gt;evil()&lt;/script&gt;",
     );
+  });
+});
+
+describe("buildMarkdownExport (PDF highlights)", () => {
+  it("includes the page number for a PDF highlight", () => {
+    const md = buildMarkdownExport([makePdfHighlight({ pdfPage: 7 })], new Date("2026-09-20T00:00:00.000Z"));
+    expect(md).toContain("Page: 7");
+  });
+
+  it("omits the page line for web highlights sharing the same export", () => {
+    const md = buildMarkdownExport(
+      [makeHighlight({ url: "https://example.com/paper.pdf" })],
+      new Date("2026-09-20T00:00:00.000Z"),
+    );
+    expect(md).not.toContain("Page:");
+  });
+
+  it("places the page line between the quoted text and the saved date", () => {
+    const md = buildMarkdownExport([makePdfHighlight({ pdfPage: 2 })], new Date("2026-09-20T00:00:00.000Z"));
+    const pageIndex = md.indexOf("Page: 2");
+    const savedIndex = md.indexOf("Saved:");
+    expect(pageIndex).toBeGreaterThan(-1);
+    expect(savedIndex).toBeGreaterThan(pageIndex);
   });
 });
 

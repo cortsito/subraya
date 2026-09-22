@@ -2,6 +2,7 @@ import { deleteHighlight, listHighlights } from "../storage/db";
 import type { Highlight } from "../shared/types";
 import { filterHighlights, selectExportTargets } from "./filter";
 import { buildMarkdownExport, exportFilename } from "./markdown";
+import { pdfPageLabel } from "./sourceLabel";
 
 const listEl = document.getElementById("list")!;
 const emptyEl = document.getElementById("empty")!;
@@ -26,6 +27,13 @@ function renderItem(highlight: Highlight): HTMLElement {
 
   const meta = document.createElement("div");
   meta.className = "highlight-meta";
+
+  const pageLabel = pdfPageLabel(highlight);
+  if (pageLabel) {
+    const badge = document.createElement("span");
+    badge.textContent = pageLabel;
+    meta.append(badge);
+  }
 
   const domain = document.createElement("span");
   domain.textContent = highlight.domain;

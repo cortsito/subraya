@@ -16,3 +16,9 @@ export function paint(id: string, range: Range): void {
   highlight.add(range);
   paintedRanges.set(id, range);
 }
+
+/** Removes every painted range. Used before a full re-render (e.g. PDF zoom change) invalidates existing Ranges. */
+export function clearAll(): void {
+  registeredHighlight?.clear();
+  paintedRanges.clear();
+}

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { Highlight } from "../shared/types";
+import type { WebHighlight } from "../shared/types";
 import { filterHighlights, selectExportTargets } from "./filter";
 
-function makeHighlight(overrides: Partial<Highlight> = {}): Highlight {
+function makeHighlight(overrides: Partial<WebHighlight> = {}): WebHighlight {
   return {
     id: "id-1",
     text: "Some highlighted text",

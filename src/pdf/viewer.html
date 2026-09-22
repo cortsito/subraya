@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Subraya PDF viewer</title>
+    <style>
+      body {
+        margin: 0;
+        font: 14px/1.5 system-ui, sans-serif;
+        color: #1a1a1a;
+        background: #737373;
+      }
+      .toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: #fafafa;
+        border-bottom: 1px solid #ccc;
+      }
+      .doc-title {
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .page-count {
+        color: #666;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .zoom-controls {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .zoom-controls button {
+        font: inherit;
+        width: 28px;
+        height: 28px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #fff;
+        cursor: pointer;
+      }
+      .zoom-controls button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      #zoom-level {
+        min-width: 42px;
+        text-align: center;
+        font-size: 12px;
+        color: #444;
+      }
+      main {
+        padding: 16px;
+      }
+      #status {
+        margin: 0;
+        padding: 16px;
+        text-align: center;
+        color: #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="toolbar">
+      <span id="doc-title" class="doc-title"></span>
+      <span id="page-count" class="page-count"></span>
+      <div class="zoom-controls">
+        <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+        <span id="zoom-level">100%</span>
+        <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+      </div>
+    </header>
+    <p id="status"></p>
+    <main id="pages"></main>
+    <script src="viewer.js"></script>
+  </body>
+</html>

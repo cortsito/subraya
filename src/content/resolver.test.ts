@@ -96,6 +96,52 @@ describe("resolveAnchor", () => {
     expect(resolved!.endContainer.parentElement?.tagName).toBe("I");
   });
 
+  it("restores a page-scoped anchor to its own root, ignoring identical text on a sibling page", () => {
+    // Simulates PDF-style per-page anchoring: two sibling "pages" share the
+    // exact same text. An anchor computed and resolved against page 2's root
+    // must land in page 2, never page 1, even though nothing in the anchor
+    // itself disambiguates them beyond the root passed in.
+    document.body.innerHTML = `
+      <div id="page-1">hello world one</div>
+      <div id="page-2">hello world one</div>
+    `;
+    const page1 = document.getElementById("page-1")!;
+    const page2 = document.getElementById("page-2")!;
+
+    const textNode = page2.firstChild!;
+    const start = textNode.textContent!.indexOf("world");
+    const end = start + "world".length;
+    const range = document.createRange();
+    range.setStart(textNode, start);
+    range.setEnd(textNode, end);
+    const anchor = computeAnchor(range, page2);
+
+    const resolved = resolveAnchor(anchor, page2);
+    expect(resolved).not.toBeNull();
+    expect(resolved!.toString()).toBe("world");
+    expect(page2.contains(resolved!.startContainer)).toBe(true);
+    expect(page1.contains(resolved!.startContainer)).toBe(false);
+  });
+
+  it("restores a page-scoped anchor after its page's content is rebuilt (zoom re-render)", () => {
+    document.body.innerHTML = `<div id="page-1">The quick brown fox jumps over the lazy dog.</div>`;
+    const page = document.getElementById("page-1")!;
+    const textNode = page.firstChild!;
+    const start = textNode.textContent!.indexOf("brown fox");
+    const end = start + "brown fox".length;
+    const range = document.createRange();
+    range.setStart(textNode, start);
+    range.setEnd(textNode, end);
+    const anchor = computeAnchor(range, page);
+
+    // Re-render: destroy and rebuild the page's text nodes, as a zoom change would.
+    page.innerHTML = "The quick brown fox jumps over the lazy dog.";
+
+    const resolved = resolveAnchor(anchor, page);
+    expect(resolved).not.toBeNull();
+    expect(resolved!.toString()).toBe("brown fox");
+  });
+
   it("returns no range when the match is ambiguous", () => {
     document.body.innerHTML = "<p>hello world one</p><p>hello world two</p>";
 

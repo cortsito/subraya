@@ -8,17 +8,17 @@ export function isEditableTarget(node: Node): boolean {
   return element.closest("input, textarea, [contenteditable]") !== null;
 }
 
-export function computeAnchor(range: Range): Anchor {
+export function computeAnchor(range: Range, root: Node = document.body): Anchor {
   const exact = range.toString();
 
   const prefixRange = document.createRange();
-  prefixRange.setStart(document.body, 0);
+  prefixRange.setStart(root, 0);
   prefixRange.setEnd(range.startContainer, range.startOffset);
   const fullPrefix = prefixRange.toString();
 
   const suffixRange = document.createRange();
   suffixRange.setStart(range.endContainer, range.endOffset);
-  suffixRange.setEnd(document.body, document.body.childNodes.length);
+  suffixRange.setEnd(root, root.childNodes.length);
   const fullSuffix = suffixRange.toString();
 
   const start = fullPrefix.length;
